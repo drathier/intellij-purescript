@@ -18,3 +18,12 @@ help or to pair on issues and improve the plugin together,
 1. clone the repo
 2. `./gradlew :runIde`
     > starts a Intellij instance with the plugin installed-
+
+
+old instructions, possibly partially relevant still:
+1. clone the repo
+2. ./gradlew idea
+3. ./generate_parser.sh
+4. ./gradlew build
+5. ./gradlew buildPlugin
+6. drag build/distributions/purity[...].zip into intellij to install newly built plugin
