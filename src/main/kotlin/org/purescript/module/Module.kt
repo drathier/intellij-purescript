@@ -10,7 +10,6 @@ import com.intellij.psi.PsiNameIdentifierOwner
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.stubs.*
 import org.purescript.features.DocCommentOwner
-import org.purescript.file.PSFile
 import org.purescript.icons.PSIcons
 import org.purescript.ide.formatting.ImportDeclaration
 import org.purescript.inference.*
@@ -420,16 +419,28 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         val oldImport = imports.firstOrNull { !it.isHiding }
         if (oldImport != null) {
             val fromPsiElement = ImportDeclaration.fromPsiElement(oldImport)
-            val importedItems = fromPsiElement.importedItems + importDeclaration.importedItems
+            // Never use `import A (a,b,c) as B` form. Prefer `import A as B` instead, since Maybe.do etc desugar to use things we might not have explicitly imported otherwise
+            val importedItems =
+                if (fromPsiElement.alias == null) {
+                    fromPsiElement.importedItems + importDeclaration.importedItems
+                }else {
+                    emptySet()
+                }
             val mergedImport = fromPsiElement.withItems(*importedItems.toTypedArray())
             val asPsi = project
                 .service<PSPsiFactory>()
                 .createImportDeclaration(mergedImport)
             oldImport.replace(asPsi)
         } else {
+            val importDecl2 =
+                if (importDeclaration.alias == null) {
+                    importDeclaration
+                } else{
+                    importDeclaration.withItems()
+                }
             val asPsi = project
                 .service<PSPsiFactory>()
-                .createImportDeclaration(importDeclaration)
+                .createImportDeclaration(importDecl2)
             addImportDeclaration(asPsi)
         }
     }
