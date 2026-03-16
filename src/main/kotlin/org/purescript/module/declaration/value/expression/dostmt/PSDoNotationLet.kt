@@ -19,7 +19,7 @@ class PSDoNotationLet(node: ASTNode) : PSPsiElement(node), DoStatement {
     override val valueNames get() = sequence<PsiNamedElement> {
         yieldAll(valueDeclarationGroups.asSequence())
         yieldAll(letBinderValueNames)
-        previous?.valueNames?.let { yieldAll(it) }
+        previous?.valueNamesAhead?.let { yieldAll(it) }
     }
 
     override fun unify() = children.filterIsInstance<Inferable>().forEach { it.unify() }
