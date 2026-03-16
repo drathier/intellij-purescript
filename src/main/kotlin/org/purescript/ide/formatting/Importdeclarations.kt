@@ -78,12 +78,12 @@ data class ImportDeclarations(val imports: Set<ImportDeclaration>) {
                 .groupBy { it.name }
                 .mapTo(mergedImportItems) {
                     val (name, importedDataItems) = it
-                    if (importedDataItems.any { it.doubleDot }) {
+                    val hasDoubleDot = importedDataItems.any { it.doubleDot }
+                    val hasDataMembers = importedDataItems.any { it.dataMembers.isNotEmpty() }
+                    if (hasDoubleDot || hasDataMembers) {
                         ImportedData(name, doubleDot = true)
                     } else {
-                        val dataMembers =
-                            importedDataItems.flatMap { it.dataMembers }.toSet()
-                        ImportedData(name, dataMembers = dataMembers)
+                        ImportedData(name)
                     }
                 }
             return mergedImportItems

@@ -12,6 +12,7 @@ import com.intellij.psi.stubs.*
 import org.purescript.features.DocCommentOwner
 import org.purescript.icons.PSIcons
 import org.purescript.ide.formatting.ImportDeclaration
+import org.purescript.ide.formatting.ImportDeclarations
 import org.purescript.inference.*
 import org.purescript.module.declaration.Importable
 import org.purescript.module.declaration.classes.ClassDecl
@@ -422,11 +423,11 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             // Never use `import A (a,b,c) as B` form. Prefer `import A as B` instead, since Maybe.do etc desugar to use things we might not have explicitly imported otherwise
             val importedItems =
                 if (fromPsiElement.alias == null) {
-                    fromPsiElement.importedItems + importDeclaration.importedItems
+                    ImportDeclarations.mergeImportedItems(fromPsiElement.importedItems + importDeclaration.importedItems)
                 }else {
                     emptySet()
                 }
-            val mergedImport = fromPsiElement.withItems(*importedItems.toTypedArray())
+            val mergedImport = fromPsiElement.copy(importedItems = importedItems)
             val asPsi = project
                 .service<PSPsiFactory>()
                 .createImportDeclaration(mergedImport)

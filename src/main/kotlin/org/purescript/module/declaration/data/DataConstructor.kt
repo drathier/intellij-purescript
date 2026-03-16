@@ -75,7 +75,7 @@ class DataConstructor : PSStubbedElement<DataConstructor.Stub>, PsiNameIdentifie
     constructor(stub: Stub, type: IStubElementType<*, *>) : super(stub, type)
 
     override fun asImport(): ImportDeclaration {
-        val items = ImportedData(dataDeclaration.name, dataMembers = setOf(name))
+        val items = ImportedData(dataDeclaration.name, doubleDot = true)
         return module.asImport().withItems(items)
     }
 

@@ -35,7 +35,7 @@
     </change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="241.*"/>
+    <idea-version since-build="251.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -73,6 +73,8 @@
         />
         <extendWordSelectionHandler
                 implementation="org.purescript.module.declaration.value.expression.ExpressionExtendWordSelectionHandler"/>
+        <extendWordSelectionHandler
+                implementation="org.purescript.module.declaration.value.expression.CommentExtendWordSelectionHandler"/>
         <lang.refactoringSupport
                 language="Purescript"
                 implementationClass="org.purescript.ide.refactoring.PSRefactoringSupportProvider"/>

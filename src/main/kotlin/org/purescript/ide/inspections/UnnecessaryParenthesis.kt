@@ -12,6 +12,7 @@ import org.purescript.module.declaration.value.expression.controll.caseof.CaseAl
 import org.purescript.module.declaration.value.expression.identifier.Argument
 import org.purescript.module.declaration.value.expression.identifier.Call
 import org.purescript.module.declaration.value.expression.identifier.ExpressionWildcard
+import org.purescript.module.declaration.value.expression.namespace.PSLambda
 import org.purescript.module.declaration.value.parameters.Parameter
 
 class UnnecessaryParenthesis : LocalInspectionTool() {
