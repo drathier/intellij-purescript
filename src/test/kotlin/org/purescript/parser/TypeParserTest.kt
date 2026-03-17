@@ -8,4 +8,5 @@ class TypeParserTest: PSLanguageParserTestBase("type") {
     fun testTypeLevelInt() = doTest(true, true)
     fun testHole() = doTest(true, true)
     fun testVisibleTypeApplications() = doTest(true, true)
+    fun testForallKindAnnotation() = doTest(true, true)
 }

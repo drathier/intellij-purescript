@@ -76,7 +76,7 @@ val typeRef = Reference { type }
 val type: DSL = KindedType.cont(Reference { type1 }, dcolon + typeRef)
 val typeVarPlain = Choice(
     TypeVarNameType(ident),
-    TypeVarKindedType(parens(TypeVarNameType(ident) + dcolon + type))
+    TypeVarKindedType(parens(Choice(`@` + TypeVarNameType(ident), TypeVarNameType(ident)) + dcolon + type))
 )
 val typeVar = Choice(
     `@` + typeVarPlain,
@@ -425,7 +425,6 @@ val doStatement = Choice(
     DoNotationBindType(binder + larrow + relaced_expr),
     DoNotationValueType(expr)
 )
-
 val block = `L{` + doStatement.sepBy(`L-sep`) + `L}`
 val doBlock = ChoiceMap(
     qualified(`'do'`),
