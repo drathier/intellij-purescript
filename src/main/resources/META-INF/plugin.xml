@@ -280,4 +280,9 @@
                           relative-to-action="NewFile"/>
         </action>
     </actions>
+
+    <intentionActions>
+        <intentionAction class="org.purescript.ide.actions.ExportIntentionAction"
+                groupId="IntentionGroup.Refactorings"/>
+    </intentionActions>
 </idea-plugin>
