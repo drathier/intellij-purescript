@@ -207,7 +207,7 @@ class ImportDeclarationsTest : TestCase() {
         )
     }
 
-    fun `test renders the two groups correctly`() {
+    fun `test renders the three groups correctly`() {
         val importDeclarations = setOf(
             ImportDeclaration("Data.Array"),
             ImportDeclaration("Prelude"),
@@ -218,10 +218,56 @@ class ImportDeclarationsTest : TestCase() {
         )
         assertEquals(
             """
-                import Data.Array
-                import Prelude
-                
-                import Data.Maybe (Maybe(..))
+import Data.Array
+import Prelude
+
+import Data.Maybe (Maybe(..))
+            """.trimIndent(),
+            ImportDeclarations(importDeclarations).text
+        )
+    }
+
+    fun `test renders qualified imports in separate group`() {
+        val importDeclarations = setOf(
+            ImportDeclaration("Data.Array"),
+            ImportDeclaration("Prelude", alias = "P"),
+            ImportDeclaration("Data.Maybe"),
+            ImportDeclaration(
+                "Data.Maybe",
+                alias = "M",
+                importedItems = setOf(ImportedData("Maybe", doubleDot = true))
+            )
+        )
+        assertEquals(
+            """
+import Data.Array
+import Data.Maybe
+
+import Data.Maybe (Maybe(..)) as M
+import Prelude as P
+            """.trimIndent(),
+            ImportDeclarations(importDeclarations).text
+        )
+    }
+
+    fun `test renders open unqualified imports first`() {
+        val importDeclarations = setOf(
+            ImportDeclaration("Data.Array"),
+            ImportDeclaration("Data.Maybe"),
+            ImportDeclaration(
+                "Data.Maybe",
+                alias = "M",
+                importedItems = setOf(ImportedData("Maybe", doubleDot = true))
+            ),
+            ImportDeclaration("Prelude")
+        )
+        assertEquals(
+            """
+import Data.Array
+import Data.Maybe
+import Prelude
+
+import Data.Maybe (Maybe(..)) as M
             """.trimIndent(),
             ImportDeclarations(importDeclarations).text
         )

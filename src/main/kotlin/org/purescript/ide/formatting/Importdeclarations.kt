@@ -11,22 +11,19 @@ data class ImportDeclarations(val imports: Set<ImportDeclaration>) {
                 mergeGroup(moduleName, alias, group)
             }.toSet()
     val text
-        get() : String = buildString {
+        get() : String {
             val imports = mergedImports
                 .sortedBy { it.moduleName }
                 .sortedBy { it.alias }
                 .sortedBy { it.hiding }
-            val implicit = imports.filter { it.implicit }
-            if (implicit.isNotEmpty()) {
-                append(implicit.joinToString("\n") { it.toString() })
-            }
-            val explicit = imports.filter { it.explicit }
-            if (implicit.isNotEmpty() && explicit.isNotEmpty()) {
-                appendLine()
-                appendLine()
-            }
-            if (explicit.isNotEmpty()) {
-                append(explicit.joinToString("\n") { it.toString() })
+            val openUnqualified = imports.filter { it.unqualified && it.importedItems.isEmpty() && !it.hiding }
+            val explicitUnqualified = imports.filter { it.unqualified && it.importedItems.isNotEmpty() }
+            val qualified = imports.filter { it.qualified }
+
+            val groups = listOf(openUnqualified, explicitUnqualified, qualified).filter { it.isNotEmpty() }
+
+            return groups.joinToString("\n\n") { group ->
+                group.joinToString("\n") { it.toString() }
             }
         }
 
@@ -116,6 +113,10 @@ data class ImportDeclaration(
      * where (+) is explicitly imported
      */
     val explicit = !implicit
+
+    val qualified = alias != null
+
+    val unqualified = alias == null
     private val sortedItems: List<ImportedItem>
         get() = importedItems.sortedBy { it.name }.sortedBy { sortKey(it) }
 
