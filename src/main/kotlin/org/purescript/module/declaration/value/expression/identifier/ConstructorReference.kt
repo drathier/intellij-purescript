@@ -5,6 +5,7 @@ import com.intellij.codeInspection.LocalQuickFixProvider
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.util.parentOfType
+import org.purescript.file.PSFile
 import org.purescript.file.filesExportingConstructor
 import org.purescript.ide.formatting.ImportDeclaration
 import org.purescript.ide.formatting.ImportedData
@@ -28,8 +29,13 @@ class ConstructorReference(
     override fun getVariants(): Array<Any> =
         candidates.toList().toTypedArray()
 
-    override fun resolve(): PsiNamedElement? =
-        (candidates).firstOrNull { it.name == element.name }
+    override fun resolve(): PsiNamedElement? {
+        val file = element.containingFile as? PSFile
+        file?.resolveCache?.get(element)?.let { return it }
+        val result = candidates.firstOrNull { it.name == element.name }
+        file?.resolveCache?.put(element, result)
+        return result
+    }
 
     private val candidates: Sequence<PsiNamedElement>
         get() {

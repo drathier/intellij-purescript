@@ -9,6 +9,7 @@ import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
 import com.intellij.psi.util.parentsOfType
+import org.purescript.file.PSFile
 import org.purescript.ide.formatting.ImportedValue
 import org.purescript.module.declaration.Importable
 import org.purescript.module.declaration.ImportableIndex
@@ -41,8 +42,10 @@ class ExpressionIdentifierReference(expressionIdentifier: PSExpressionIdentifier
             }.toList().toTypedArray()
 
     override fun resolve(): PsiNamedElement? {
+        val file = element.containingFile as? PSFile
+        file?.resolveCache?.get(element)?.let { return it }
         val name = element.name
-        return when (val qualifyingName = element.qualifiedIdentifier.moduleName?.name) {
+        val result = when (val qualifyingName = element.qualifiedIdentifier.moduleName?.name) {
             null -> {
                 element
                     .parentsOfType<ValueNamespace>(withSelf = false)
@@ -53,7 +56,9 @@ class ExpressionIdentifierReference(expressionIdentifier: PSExpressionIdentifier
             }
 
             else -> getImportedCandidates(qualifyingName).firstOrNull { it.name == name }
-        } 
+        }
+        file?.resolveCache?.put(element, result)
+        return result
     }
 
     private fun getImportedCandidates(qualifyingName: String?): Sequence<PsiNamedElement> {

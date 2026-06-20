@@ -144,6 +144,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         val newTypeConstructors by lazy { newTypeDeclarations.map { it.newTypeConstructor } }
         val typeSynonymDeclarations by lazy { children<TypeDecl>() }
         val foreignDataDeclarations by lazy { children<PSForeignDataDeclaration>() }
+        val highlightResolveCache by lazy { mutableMapOf<String, PsiNamedElement?>() }
     }
 
     override fun subtreeChanged() {

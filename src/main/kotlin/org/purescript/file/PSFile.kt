@@ -3,7 +3,9 @@ package org.purescript.file
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.psi.FileViewProvider
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.StubBuilder
 import com.intellij.psi.stubs.DefaultStubBuilder
 import com.intellij.psi.stubs.PsiFileStubImpl
@@ -71,8 +73,16 @@ class PSFile(viewProvider: FileViewProvider) :
             ?: emptyList()
 
     var typeSpace = TypeSpace()
+    val resolveCache = mutableMapOf<PsiElement, PsiNamedElement?>()
+    private var lastContentStamp: Long = -1
+
     override fun subtreeChanged() {
-        typeSpace = TypeSpace()
+        resolveCache.clear()
+        val vFile = virtualFile
+        if (vFile == null || vFile.modificationStamp != lastContentStamp) {
+            lastContentStamp = vFile?.modificationStamp ?: 0
+            typeSpace = TypeSpace()
+        }
         super.subtreeChanged()
     }
 }

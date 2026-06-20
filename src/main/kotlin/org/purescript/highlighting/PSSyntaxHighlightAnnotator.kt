@@ -10,8 +10,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.util.endOffset
 import com.intellij.psi.util.parents
+import com.intellij.psi.util.parentsOfType
 import com.intellij.psi.util.startOffset
 import org.purescript.highlighting.PSSyntaxHighlighter.FUNCTION_CALL
 import org.purescript.highlighting.PSSyntaxHighlighter.FUNCTION_DECLARATION
@@ -23,6 +25,7 @@ import org.purescript.highlighting.PSSyntaxHighlighter.TYPE_VARIABLE
 import org.purescript.module.declaration.Signature
 import org.purescript.module.declaration.value.ValueDecl
 import org.purescript.module.declaration.value.ValueDeclarationGroup
+import org.purescript.module.declaration.value.ValueNamespace
 import org.purescript.module.declaration.value.binder.VarBinder
 import org.purescript.module.declaration.value.expression.identifier.Call
 import org.purescript.module.declaration.value.expression.identifier.PSExpressionIdentifier
@@ -33,6 +36,27 @@ import org.purescript.parser.ExpressionCtor
 import org.purescript.parser.TypeCtor
 
 class PSSyntaxHighlightAnnotator : Annotator {
+
+    private fun resolveForHighlighting(element: PSExpressionIdentifier): PsiNamedElement? {
+        val name = element.name
+        if (element.qualifiedIdentifier.moduleName?.name != null) return null
+
+        val local = element
+            .parentsOfType<ValueNamespace>(withSelf = false)
+            .flatMap { it.valueNames }
+            .takeWhile { it.containingFile == element.containingFile }
+            .firstOrNull { it.name == name }
+        if (local != null) return local
+
+        val module = element.module
+        val topLevel = module.valueGroups.firstOrNull { it.name == name }
+        if (topLevel != null) return topLevel
+
+        return module.cache.highlightResolveCache.getOrPut(name) {
+            element.reference.resolve()
+        }
+    }
+
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         when (element) {
             is PSIdentifier -> when {
@@ -45,13 +69,14 @@ class PSSyntaxHighlightAnnotator : Annotator {
                 }
             }
 
-            is PSExpressionIdentifier -> when (val ref = element.reference.resolve()) {
-                is ValueDeclarationGroup -> holder.newSilentAnnotation(INFORMATION).textAttributes(
-                    if (ref.isTopLevel) GLOBAL_VARIABLE
-                    else LOCAL_VARIABLE
-                ).create()
-
-                is VarBinder -> holder.newSilentAnnotation(INFORMATION).textAttributes(PARAMETER).create()
+            is PSExpressionIdentifier -> {
+                val resolved = resolveForHighlighting(element)
+                when (resolved) {
+                    is ValueDeclarationGroup -> holder.newSilentAnnotation(INFORMATION)
+                        .textAttributes(if (resolved.isTopLevel) GLOBAL_VARIABLE else LOCAL_VARIABLE).create()
+                    is VarBinder -> holder.newSilentAnnotation(INFORMATION)
+                        .textAttributes(PARAMETER).create()
+                }
             }
 
             is VarBinder -> holder.newSilentAnnotation(INFORMATION).textAttributes(PARAMETER).create()

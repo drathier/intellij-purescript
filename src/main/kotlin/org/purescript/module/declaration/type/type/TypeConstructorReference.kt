@@ -7,6 +7,7 @@ import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
 import org.purescript.PSLanguage
+import org.purescript.file.PSFile
 import org.purescript.module.Module
 import org.purescript.module.declaration.Importable
 import org.purescript.module.declaration.ImportableTypeIndex
@@ -17,10 +18,19 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
     LocalQuickFixProvider,
     PsiReferenceBase<PSTypeConstructor>(typeConstructor, typeConstructor.identifier.textRangeInParent, false) {
 
-    override fun getVariants(): Array<PsiNamedElement> = candidates.toTypedArray()
-    override fun resolve(): PsiNamedElement? = 
-        candidates.firstOrNull { it.name == element.name } 
-        ?: fromPrim()
+    override fun getVariants(): Array<PsiNamedElement> = candidates.toList().toTypedArray()
+    override fun resolve(): PsiNamedElement? {
+        val file = element.containingFile as? PSFile
+        file?.resolveCache?.get(element)?.let { return it }
+        val qualifier = element.moduleName?.name
+        val result = if (qualifier != null) {
+            candidatesFor(qualifier).firstOrNull { it.name == element.name }
+        } else {
+            resolveWithoutAlias() ?: fromPrim()
+        }
+        file?.resolveCache?.put(element, result)
+        return result
+    }
 
     private fun fromPrim(): PSForeignDataDeclaration? {
         val primModule = PSLanguage
@@ -30,15 +40,29 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
             ?.firstOrNull { it.name == element.name }
     }
 
+    private fun resolveWithoutAlias(): PsiNamedElement? {
+        val module = element.module
+        module.cache.dataDeclarations.firstOrNull { it.name == element.name }?.let { return it }
+        module.cache.newTypeDeclarations.firstOrNull { it.name == element.name }?.let { return it }
+        module.cache.typeSynonymDeclarations.firstOrNull { it.name == element.name }?.let { return it }
+        module.cache.foreignDataDeclarations.firstOrNull { it.name == element.name }?.let { return it }
+        module.cache.classDeclarations.firstOrNull { it.name == element.name }?.let { return it }
+        for (importDeclaration in module.cache.imports) {
+            if (importDeclaration.importAlias != null) continue
+            importDeclaration.importedTypeNames.firstOrNull { it.name == element.name }?.let { return it }
+        }
+        return null
+    }
+
     /**
      * Type constructors can reference any data, new type, or synonym declaration
      * in the current module or any of the imported modules.
      */
-    private val candidates: List<PsiNamedElement>
+    private val candidates: Sequence<PsiNamedElement>
         get() {
             val qualifier = element.moduleName?.name
             return if (qualifier != null) {
-                candidatesFor(qualifier)
+                candidatesFor(qualifier).asSequence()
             } else {
                 allCandidatesWithoutAlias
             }
@@ -50,20 +74,18 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
         return importDeclaration.flatMap { it.importedTypeNames }.toMutableList()
     }
 
-    private val allCandidatesWithoutAlias: List<PsiNamedElement>
-        get() {
-            val module: Module = element.module
-            val candidates = mutableListOf<PsiNamedElement>()
-            candidates.addAll(module.cache.dataDeclarations)
-            candidates.addAll(module.cache.newTypeDeclarations)
-            candidates.addAll(module.cache.typeSynonymDeclarations)
-            candidates.addAll(module.cache.foreignDataDeclarations)
-            candidates.addAll(module.cache.classDeclarations)
+    private val allCandidatesWithoutAlias: Sequence<PsiNamedElement>
+        get() = sequence {
+            val module = element.module
+            yieldAll(module.cache.dataDeclarations.asSequence())
+            yieldAll(module.cache.newTypeDeclarations.asSequence())
+            yieldAll(module.cache.typeSynonymDeclarations.asSequence())
+            yieldAll(module.cache.foreignDataDeclarations.asSequence())
+            yieldAll(module.cache.classDeclarations.asSequence())
             for (importDeclaration in module.cache.imports) {
                 if (importDeclaration.importAlias != null) continue
-                candidates.addAll(importDeclaration.importedTypeNames)
+                yieldAll(importDeclaration.importedTypeNames)
             }
-            return candidates
         }
 
     override fun getQuickFixes(): Array<LocalQuickFix> {
