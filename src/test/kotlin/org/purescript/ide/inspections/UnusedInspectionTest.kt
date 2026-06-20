@@ -251,4 +251,63 @@ class UnusedInspectionTest : BasePlatformTestCase() {
         myFixture.checkHighlighting()
     }
 
+    fun `test it reports unused open qualified imports`() {
+        myFixture.configureByText(
+            "Foo.purs",
+            """
+            |module Foo where
+            |
+            |import Bar as B
+            """.trimMargin()
+        )
+        myFixture.enableInspections(UnusedInspection())
+        myFixture.checkHighlighting()
+    }
+
+    fun `test it don't report used open qualified imports`() {
+        myFixture.configureByText(
+            "Bar.purs",
+            """
+            |module Bar (bar) where
+            |
+            |bar :: Int
+            |bar = 1
+            """.trimMargin()
+        )
+        myFixture.configureByText(
+            "Foo.purs",
+            """
+            |module Foo (x) where
+            |
+            |import Bar as B
+            |
+            |x = B.bar
+            """.trimMargin()
+        )
+        myFixture.enableInspections(UnusedInspection())
+        myFixture.checkHighlighting()
+    }
+
+    fun `test it don't report open qualified imports used via re-export`() {
+        myFixture.configureByText(
+            "Bar.purs",
+            """
+            |module Bar (bar) where
+            |
+            |bar :: Int
+            |bar = 1
+            """.trimMargin()
+        )
+        myFixture.configureByText(
+            "Foo.purs",
+            """
+            |module Foo (module B) where
+            |
+            |import Bar as B
+            """.trimMargin()
+        )
+        myFixture.enableInspections(UnusedInspection())
+        myFixture.checkHighlighting()
+    }
+
 }

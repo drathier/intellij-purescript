@@ -19,12 +19,14 @@ import com.intellij.psi.util.elementType
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.siblings
 import com.intellij.refactoring.safeDelete.SafeDeleteHandler
+import com.intellij.psi.util.descendantsOfType
 import org.purescript.module.declaration.Signature
 import org.purescript.module.declaration.classes.PSInstanceDeclaration
 import org.purescript.module.declaration.data.DataDeclaration
 import org.purescript.module.declaration.imports.*
 import org.purescript.module.declaration.newtype.NewtypeDecl
 import org.purescript.module.declaration.value.ValueDeclarationGroup
+import org.purescript.module.declaration.value.expression.Qualified
 import org.purescript.parser.COMMA
 import org.purescript.parser.PSParserDefinition
 
@@ -44,6 +46,24 @@ class UnusedInspection : LocalInspectionTool() {
                     LIKE_UNUSED_SYMBOL,
                     SafeDelete(element)
                 )
+            }
+
+            is Import -> {
+                val alias = element.importAlias
+                val hasItems = element.importedItems.isNotEmpty()
+                when {
+                    element.isExported == true -> Unit
+                    element.isHiding -> Unit
+                    alias == null && !hasItems -> Unit
+                    alias != null && !qualifierIsUsed(alias.name) -> holder.registerProblem(
+                        element,
+                        getDescription(element),
+                        LIKE_UNUSED_SYMBOL,
+                        UnusedImport(element)
+                    )
+                    alias == null && hasItems -> Unit
+                    else -> Unit
+                }
             }
 
             is PSImportedValue, is PSImportedOperator, is PSImportedDataMember -> when {
@@ -90,11 +110,17 @@ class UnusedInspection : LocalInspectionTool() {
 
         private fun getDescription(element: PsiElement): String = when (element) {
             is ValueDeclarationGroup -> "Unused value declaration"
+            is Import -> "Unused open qualified import"
             is PSImportedValue -> "Unused imported value"
             is PSImportedOperator -> "Unused imported operator"
             is PSImportedDataMember -> "Unused imported data constructor"
             is PSImportedData -> "Unused imported data"
             else -> ""
+        }
+
+        private fun qualifierIsUsed(alias: String?): Boolean {
+            if (alias == null) return false
+            return holder.file.descendantsOfType<Qualified>().any { it.qualifierName == alias }
         }
 
         private inline fun <reified E : PsiElement> referenceIsUsedInFile(element: E): Boolean {
@@ -132,6 +158,14 @@ class UnusedInspection : LocalInspectionTool() {
             val document = documentManager.getDocument(file) ?: return
             if (!startElement.isValid) return
             val other = when (startElement) {
+                is PSImportAlias -> {
+                    val import = startElement.parentOfType<Import>()
+                    if (import?.importedItems?.isEmpty() == true) {
+                        listOf(import)
+                    } else {
+                        listOf(startElement)
+                    }
+                }
                 is PSImportedItem -> {
                     val import = startElement.parentOfType<Import>()
                     if ((import?.importedItems?.size == 1)) {
