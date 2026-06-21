@@ -13,8 +13,8 @@ plugins {
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
 
-    kotlin("plugin.serialization") version "2.3.0"
-    id("org.jetbrains.grammarkit") version "2022.3.2"
+    kotlin("plugin.serialization") version "2.4.0"
+    id("org.jetbrains.intellij.platform.grammarkit") version "2.16.0"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -22,7 +22,23 @@ version = providers.gradleProperty("pluginVersion").get()
 
 // Set the JVM language level used to build the project.
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(26)
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(21)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
 }
 
 // Configure project's dependencies
@@ -147,9 +163,8 @@ tasks {
     }
     generateLexer.configure {
         sourceFile.set(file("src/main/grammar/Purescript.flex"))
-        targetDir.set("src/main/gen/org/purescript/lexer/")
-        targetClass.set("_PSLexer")
-        purgeOldFiles.set(true)
+        targetRootOutputDir.set(layout.projectDirectory.dir("src/main/gen"))
+        packageName.set("org.purescript.lexer")
         skeleton.set(file("src/main/grammar/idea-flex.skeleton"))
     }
 }
