@@ -15,7 +15,7 @@ import java.util.*
 
 class ImportQuickFix(vararg val imports: ImportDeclaration) : LocalQuickFix {
 
-    override fun getFamilyName(): String = "Import"
+    override fun getFamilyName(): String = getName()
 
     override fun getName(): String =
         when (val import = imports.singleOrNull()) {

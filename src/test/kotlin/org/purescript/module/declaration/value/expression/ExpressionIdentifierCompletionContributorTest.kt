@@ -111,7 +111,7 @@ class ExpressionIdentifierCompletionContributorTest: BasePlatformTestCase() {
             """
                 |module Foo where
                 |
-                |import Bar (x1, y2) as Bar
+                |import Bar as Bar
                 |
                 |y0 = Bar.x1
             """.trimMargin(), true)
@@ -141,7 +141,7 @@ class ExpressionIdentifierCompletionContributorTest: BasePlatformTestCase() {
             """
                 |module Foo where
                 |
-                |import Bar ((++)) as Bar
+                |import Bar as Bar
                 |
                 |y0 = 1 Bar.++
             """.trimMargin(), true)
@@ -170,7 +170,7 @@ class ExpressionIdentifierCompletionContributorTest: BasePlatformTestCase() {
             """
                 |module Foo where
                 |
-                |import Bar (User(User)) as Bar
+                |import Bar as Bar
                 |
                 |y0 = Bar.User
             """.trimMargin(), true)

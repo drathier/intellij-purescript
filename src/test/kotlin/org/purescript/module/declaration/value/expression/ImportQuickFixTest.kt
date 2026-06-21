@@ -217,7 +217,7 @@ class ImportQuickFixTest : BasePlatformTestCase() {
 
         assertEquals("Bar", file.getImportDeclaration().name)
         assertEquals("Bar", file.getImportAlias().name)
-        assertEquals("+", file.getImportedOperator().name)
+        assertEmpty(file.getImportDeclaration().importedItems)
     }
 
     fun `test imports type constructor`() {

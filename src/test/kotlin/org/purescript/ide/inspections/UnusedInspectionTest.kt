@@ -257,7 +257,7 @@ class UnusedInspectionTest : BasePlatformTestCase() {
             """
             |module Foo where
             |
-            |import Bar as B
+            |<warning descr="Unused open qualified import">import Bar as B</warning>
             """.trimMargin()
         )
         myFixture.enableInspections(UnusedInspection())

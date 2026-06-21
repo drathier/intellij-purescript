@@ -55,13 +55,12 @@ class UnusedInspection : LocalInspectionTool() {
                     element.isExported == true -> Unit
                     element.isHiding -> Unit
                     alias == null && !hasItems -> Unit
-                    alias != null && !qualifierIsUsed(alias.name) -> holder.registerProblem(
+                    alias != null && !hasItems && !qualifierIsUsed(alias.name) -> holder.registerProblem(
                         element,
                         getDescription(element),
                         LIKE_UNUSED_SYMBOL,
                         UnusedImport(element)
                     )
-                    alias == null && hasItems -> Unit
                     else -> Unit
                 }
             }
