@@ -3,6 +3,7 @@ package org.purescript.module.exports
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiReferenceBase
+import org.purescript.file.PSFile
 
 class ExportedDataReference(exportedData: ExportedData.Psi) : PsiReferenceBase<ExportedData.Psi>(
     exportedData,
@@ -13,8 +14,13 @@ class ExportedDataReference(exportedData: ExportedData.Psi) : PsiReferenceBase<E
         candidates.distinctBy { it.name }
             .toTypedArray()
 
-    override fun resolve(): PsiElement? =
-        candidates.firstOrNull { it.name == myElement.name }
+    override fun resolve(): PsiElement? {
+        val file = myElement.containingFile as? PSFile
+        file?.resolveCache?.get(myElement)?.let { return it }
+        val result = candidates.firstOrNull { it.name == myElement.name }
+        file?.resolveCache?.put(myElement, result)
+        return result
+    }
 
     private val candidates: Array<PsiNamedElement>
         get() = try {

@@ -2,6 +2,7 @@ package org.purescript.module.exports
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
+import org.purescript.file.PSFile
 import org.purescript.psi.PSPsiFactory
 import org.purescript.module.declaration.imports.Import
 
@@ -15,12 +16,16 @@ class ExportedModuleReference(exportedModule: ExportedModule) : PsiReferenceBase
     }
 
     override fun resolve(): PsiElement? {
-        return if (element.name == myElement.module.name) {
+        val file = myElement.containingFile as? PSFile
+        file?.resolveCache?.get(myElement)?.let { return it }
+        val result = if (element.name == myElement.module.name) {
             myElement.module
         } else {
             candidates.firstOrNull { it.name == myElement.name }
                 ?.run { importAlias ?: importedModule }
         }
+        file?.resolveCache?.put(myElement, result)
+        return result
     }
 
     override fun handleElementRename(name: String): PsiElement? {

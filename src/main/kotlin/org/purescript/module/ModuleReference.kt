@@ -4,6 +4,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
+import org.purescript.file.PSFile
 import org.purescript.psi.PSPsiFactory
 import org.purescript.module.declaration.imports.Import
 
@@ -17,12 +18,16 @@ class ModuleReference(element: Import) : PsiReferenceBase<Import>(
     }
 
     override fun resolve(): Module? {
+        val file = element.containingFile as? PSFile
+        file?.resolveCache?.get(element)?.let { return it as? Module }
         val moduleName = element.moduleName.name
         val project = element.project
         val index = ModuleNameIndex()
         val scope = GlobalSearchScope.allScope(project)
         val modules = StubIndex.getElements(index.key, moduleName, project, scope, Module::class.java)
-        return modules.firstOrNull { it.isValid }
+        val result = modules.firstOrNull { it.isValid }
+        file?.resolveCache?.put(element, result)
+        return result
     }
 
     override fun handleElementRename(name: String): PsiElement? {
