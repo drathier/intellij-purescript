@@ -8,7 +8,6 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
 import org.purescript.PSLanguage
 import org.purescript.file.PSFile
-import org.purescript.module.Module
 import org.purescript.module.declaration.Importable
 import org.purescript.module.declaration.ImportableTypeIndex
 import org.purescript.module.declaration.foreign.PSForeignDataDeclaration
@@ -41,7 +40,7 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
     }
 
     private fun resolveWithoutAlias(): PsiNamedElement? {
-        val module = element.module
+        val module = try { element.module } catch (_: IllegalStateException) { return null }
         module.cache.dataDeclarations.firstOrNull { it.name == element.name }?.let { return it }
         module.cache.newTypeDeclarations.firstOrNull { it.name == element.name }?.let { return it }
         module.cache.typeSynonymDeclarations.firstOrNull { it.name == element.name }?.let { return it }
@@ -69,22 +68,24 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
         }
 
     private fun candidatesFor(qualifier: String): List<PsiNamedElement> {
-        val module: Module = element.module
+        val module = try { element.module } catch (_: IllegalStateException) { return emptyList() }
         val importDeclaration = module.cache.imports.filter { it.importAlias?.name == qualifier }
         return importDeclaration.flatMap { it.importedTypeNames }.toMutableList()
     }
 
     private val allCandidatesWithoutAlias: Sequence<PsiNamedElement>
-        get() = sequence {
-            val module = element.module
-            yieldAll(module.cache.dataDeclarations.asSequence())
-            yieldAll(module.cache.newTypeDeclarations.asSequence())
-            yieldAll(module.cache.typeSynonymDeclarations.asSequence())
-            yieldAll(module.cache.foreignDataDeclarations.asSequence())
-            yieldAll(module.cache.classDeclarations.asSequence())
-            for (importDeclaration in module.cache.imports) {
-                if (importDeclaration.importAlias != null) continue
-                yieldAll(importDeclaration.importedTypeNames)
+        get() {
+            val module = try { element.module } catch (_: IllegalStateException) { return emptySequence() }
+            return sequence {
+                yieldAll(module.cache.dataDeclarations.asSequence())
+                yieldAll(module.cache.newTypeDeclarations.asSequence())
+                yieldAll(module.cache.typeSynonymDeclarations.asSequence())
+                yieldAll(module.cache.foreignDataDeclarations.asSequence())
+                yieldAll(module.cache.classDeclarations.asSequence())
+                for (importDeclaration in module.cache.imports) {
+                    if (importDeclaration.importAlias != null) continue
+                    yieldAll(importDeclaration.importedTypeNames)
+                }
             }
         }
 

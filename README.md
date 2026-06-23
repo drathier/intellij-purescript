@@ -26,6 +26,6 @@ old instructions, possibly partially relevant still:
 3. ./generate_parser.sh
 4. ./gradlew build
 5a. ./gradlew buildPlugin
-5b. `JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home ./gradlew buildPlugin`
-6. drag build/distributions/purity[...].zip into intellij to install newly built plugin
+5b. ./gradlew clean build buildPlugin
+6. intellij>settings>plugins>top right menu>install from disk> build/distributions/purity[...].zip into intellij to install newly built plugin
 

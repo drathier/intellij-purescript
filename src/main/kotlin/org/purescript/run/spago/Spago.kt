@@ -9,10 +9,13 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.RootsChangeRescanningInfo
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.roots.impl.ProjectRootManagerImpl
 import com.intellij.openapi.util.SystemInfo
@@ -37,6 +40,7 @@ import org.purescript.run.Npm
 class Spago(val project: Project) {
     var libraries = emptyList<SpagoLibrary>()
     var legacy = false
+    private var trackedSourceRoots: Set<String> = emptySet()
     init {
         updateLibraries()
         project.messageBus.connect().subscribe(
@@ -128,9 +132,30 @@ class Spago(val project: Project) {
 
     private fun triggerRootsChanged() = invokeLater {
         runWriteAction {
+            syncSourceRoots()
             val rootManagerImpl = ProjectRootManagerImpl.getInstanceImpl(project)
             rootManagerImpl.makeRootsChange({}, RootsChangeRescanningInfo.TOTAL_RESCAN)
         }
+    }
+
+    private fun syncSourceRoots() {
+        val module = ModuleManager.getInstance(project).modules.firstOrNull() ?: return
+        val newRoots = libraries.flatMap { it.sourceRoots.asSequence() }.map { it.url }.toSet()
+        ModuleRootModificationUtil.updateModel(module) { model ->
+            for (entry in model.contentEntries) {
+                for (folder in entry.sourceFolders) {
+                    if (folder.url in trackedSourceRoots) {
+                        entry.removeSourceFolder(folder)
+                    }
+                }
+                for (url in newRoots) {
+                    if (entry.sourceFolders.none { it.url == url }) {
+                        entry.addSourceFolder(url, false)
+                    }
+                }
+            }
+        }
+        trackedSourceRoots = newRoots
     }
 
     @Serializable(NextDepSerializer::class)

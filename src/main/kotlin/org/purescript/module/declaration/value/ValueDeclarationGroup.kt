@@ -134,9 +134,16 @@ class ValueDeclarationGroup : PSStubbedElement<ValueDeclarationGroup.Stub>,
         return this
     }
 
-    override fun getName(): String = greenStub?.name ?: nameIdentifier.name
-    override fun getNameIdentifier(): PSIdentifier = valueDeclarations.first().nameIdentifier
-    override fun getTextOffset(): Int = nameIdentifier.textOffset
+    override fun getName(): String = greenStub?.name ?:
+        valueDeclarations.first().let {
+            it.operatorIdentifier?.getName() ?: it.nameIdentifier.name
+        }
+    override fun getNameIdentifier(): PsiElement = 
+        valueDeclarations.first().operatorIdentifier ?: valueDeclarations.first().nameIdentifier
+    override fun getTextOffset(): Int =
+        valueDeclarations.first().let {
+            it.operatorIdentifier?.textOffset ?: it.nameIdentifier.textOffset
+        }
     override val docComments: List<PsiComment>
         get() = this.getDocComments() + valueDeclarations.flatMap { it.docComments }.toList()
 

@@ -341,6 +341,7 @@ val decl = Choice(
     (`'type'` + properName + dcolon) + type,
     TypeDeclType(`'type'` + properName + TypeParametersType(!+typeVar) + eq + type),
     valueDeclarationGroup(),
+    ValueDeclType(symbol + Empty(ParametersType, before = guardedDecl)),
     SignatureType(ident + dcolon + type.relax("malformed type")),
     foreignDeclaration,
     fixityDeclaration,

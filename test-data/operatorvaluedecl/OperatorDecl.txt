@@ -1,0 +1,26 @@
+Purescript File
+  Module
+    PsiElement(module)('module')
+    PSModuleName(ModuleName)
+      PsiElement(proper name)('Test')
+    PsiElement(where)('where')
+    Import
+      PsiElement(import)('import')
+      PSModuleName(ModuleName)
+        PsiElement(proper name)('Prelude')
+    ValueDecl
+      PSSymbol(symbol)
+        PsiElement(()('(')
+        PSOperatorName(OperatorName)
+          PsiElement(..)('..')
+        PsiElement())(')')
+      Parameters(Parameters)
+        <empty list>
+      PsiElement(=)('=')
+      PSExpressionSymbol(ExpressionSymbol)
+        PSQualifiedSymbol(symbol)
+          PSSymbol(symbol)
+            PsiElement(()('(')
+            PSOperatorName(OperatorName)
+              PsiElement(..)('..')
+            PsiElement())(')')

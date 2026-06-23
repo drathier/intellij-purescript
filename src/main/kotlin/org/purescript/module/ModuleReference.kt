@@ -26,7 +26,7 @@ class ModuleReference(element: Import) : PsiReferenceBase<Import>(
         val scope = GlobalSearchScope.allScope(project)
         val modules = StubIndex.getElements(index.key, moduleName, project, scope, Module::class.java)
         val result = modules.firstOrNull { it.isValid }
-        file?.resolveCache?.put(element, result)
+        result?.let { file?.resolveCache?.put(element, it) }
         return result
     }
 

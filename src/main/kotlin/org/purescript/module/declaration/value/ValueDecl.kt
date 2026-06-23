@@ -25,6 +25,7 @@ import org.purescript.module.declaration.value.expression.ExpressionAtom
 import org.purescript.module.declaration.value.expression.namespace.PSExpressionWhere
 import org.purescript.module.declaration.value.parameters.Parameters
 import org.purescript.name.PSIdentifier
+import org.purescript.name.PSSymbol
 import org.purescript.psi.AStub
 import org.purescript.psi.PSElementType
 import org.purescript.psi.PSPsiFactory
@@ -63,7 +64,7 @@ class ValueDecl : PSStubbedElement<ValueDecl.Stub>,
         return this
     }
 
-    override fun getName() = nameIdentifier.name
+    override fun getName() = operatorIdentifier?.getName() ?: nameIdentifier.name
     override fun addTypeDeclaration(variable: ValueDeclarationGroup): ValueDeclarationGroup {
         val factory = project.service<PSPsiFactory>()
         return when (val w = where) {
@@ -120,6 +121,7 @@ class ValueDecl : PSStubbedElement<ValueDecl.Stub>,
     }
 
     val nameIdentifier: PSIdentifier get() = findNotNullChildByClass(PSIdentifier::class.java)
+    val operatorIdentifier: PSSymbol? get() = findChildByClass(PSSymbol::class.java)
     override val docComments get() = this.getDocComments()
     val parameterValueNames get() = parameterList.valueNames
     val namedParameters get() = parameterList.varBinderParameters

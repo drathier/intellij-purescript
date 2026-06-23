@@ -77,10 +77,10 @@ class PSFile(viewProvider: FileViewProvider) :
     private var lastContentStamp: Long = -1
 
     override fun subtreeChanged() {
-        resolveCache.clear()
         val vFile = virtualFile
         if (vFile == null || vFile.modificationStamp != lastContentStamp) {
             lastContentStamp = vFile?.modificationStamp ?: 0
+            resolveCache.clear()
             typeSpace = TypeSpace()
         }
         super.subtreeChanged()
