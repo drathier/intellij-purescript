@@ -50,8 +50,6 @@ charControl = "^" [:uppercase:]
 
 %{
    int comment_nesting = 0;
-   int yyline = 0;
-   int yycolumn = 0;
 %}
 
 %%

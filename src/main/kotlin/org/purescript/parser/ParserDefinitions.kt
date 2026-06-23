@@ -187,7 +187,9 @@ val exprAtom = Choice(
     number,
     ArrayLiteral(squares(!(expr + !+(`,` + expr.relax("missing array element"))))),
     RecordLiteralType(recordLayout(recordLabel, "record label")),
-    Parens(parens(expr.relax("empty parenthesis")))
+    Parens(parens(expr.relax("empty parenthesis"))),
+    Parens(parens(ExpressionOperator(qualOp) + expr.relax("missing value in section"))),
+    Parens(parens(expr.relax("missing value in section") + ExpressionOperator(qualOp)))
 )
 val expr7 = RecordAccessType.fold(exprAtom, dot + Accessor(label))
 
@@ -299,7 +301,7 @@ val importList = ImportList(
     )
 )
 val importDeclaration = ImportType(
-    `'import'` + moduleName +
+    `'import'` + (Lookahead(LOWER.dsl) { tokenText == "qualified" } / True) + moduleName +
             Choice(
                 importList + ImportAlias(`'as'` + moduleName),
                 importList,

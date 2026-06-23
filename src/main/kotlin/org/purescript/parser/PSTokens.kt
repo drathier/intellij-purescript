@@ -38,7 +38,6 @@ import org.purescript.psi.PSElementType
 @JvmField val WHERE = PSElementType("where")
 @JvmField val FORALL = PSElementType("forall") // contextual keyword
 
-// TODO kings - I think qualified on import is gone now and can be removed
 @JvmField val HIDING = PSElementType("hiding") // contextual keyword
 @JvmField val AS = PSElementType("as") // contextual keyword
 @JvmField val DARROW = PSElementType("=>")
