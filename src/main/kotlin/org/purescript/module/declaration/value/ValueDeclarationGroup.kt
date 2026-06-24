@@ -163,7 +163,17 @@ class ValueDeclarationGroup : PSStubbedElement<ValueDeclarationGroup.Stub>,
 
 
     override fun unify() {
-        signature?.inferType()?.let(::unify)
-        valueDeclarations.forEach { it.inferType().let(::unify) }
+        if (!inferenceStack.get().add(this)) return
+        try {
+            signature?.inferType()?.let(::unify)
+            valueDeclarations.forEach { it.inferType().let(::unify) }
+        } finally {
+            inferenceStack.get().remove(this)
+        }
+    }
+
+    companion object {
+        private val inferenceStack =
+            ThreadLocal.withInitial { mutableSetOf<ValueDeclarationGroup>() }
     }
 }

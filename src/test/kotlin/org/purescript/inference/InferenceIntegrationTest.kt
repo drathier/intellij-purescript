@@ -502,6 +502,19 @@ class InferenceIntegrationTest : BasePlatformTestCase() {
         TestCase.assertEquals("Int -> Int", pprint("$x"))
     }
 
+    fun `test mutual recursion`() {
+        val Main = myFixture.configureByText(
+            "Main.purs",
+            """
+                module Main where
+                f = g
+                g = f
+            """.trimIndent()
+        )
+        val f = Main.getValueDeclarationGroupByName("f").inferType()
+        TestCase.assertEquals("a", pprint("$f"))
+    }
+
     fun pprint(string: String): String {
         val letters = ('a'..'z').joinToString("")
         val id = Regex("u\\d+")

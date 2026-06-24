@@ -167,6 +167,9 @@ tasks {
         packageName.set("org.purescript.lexer")
         skeleton.set(file("src/main/grammar/idea-flex.skeleton"))
     }
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        dependsOn(generateLexer)
+    }
 }
 
 intellijPlatformTesting {
