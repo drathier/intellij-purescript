@@ -70,6 +70,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             } else sequence {
                 val explicitlyNames = explicitlyExportedItems
                     .filterIsInstance(ExportedTypeOperator.Psi::class.java)
+                    .filter { it.isValid }
                     .map { it.name }
                     .toSet()
 
@@ -177,6 +178,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             } else sequence {
                 val explicitlyNames = explicitlyExportedItems
                     .filterIsInstance(ExportedOperator.Psi::class.java)
+                    .filter { it.isValid }
                     .map { it.name }
                     .toSet()
 
@@ -208,6 +210,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             } else sequence {
                 val explicitlyNames = explicitlyExportedItems
                     .filterIsInstance(ExportedOperator.Psi::class.java)
+                    .filter { it.isValid }
                     .map { it.name }
                     .toSet()
 
@@ -235,7 +238,8 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         } else sequence {
             val explicitlyNames = explicitlyExportedItems
                 .filterIsInstance(ExportedOperator.Psi::class.java)
-                .map { it.name }
+                .filter { it.isValid }
+                .mapNotNull { it.name }
                 .toSet()
 
             if (exportsSelf || name in explicitlyNames) {
@@ -274,7 +278,8 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         } else {
             val explicitlyNames = explicitlyExportedItems
                 .filterIsInstance(Wanted::class.java)
-                .map { it.name }
+                .filter { it.isValid }
+                .mapNotNull { it.name }
                 .toSet()
 
             val exportedDeclarations = mutableListOf<Declaration>()
@@ -306,6 +311,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             } else {
                 val explicitlyNames = explicitlyExportedItems
                     .filterIsInstance(ExportedValue.Psi::class.java)
+                    .filter { it.isValid }
                     .map { it.name }
                     .toSet()
                 val exportedModules = explicitlyExportedItems.filterIsInstance<ExportedModule>().toList()
@@ -403,6 +409,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         get() =
             exports?.exportedItems
                 ?.filterIsInstance(ExportedModule::class.java)
+                ?.filter { it.isValid }
                 ?.map { it.name }
                 ?.toList()
                 ?: emptyList()
@@ -503,7 +510,8 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         } else sequence {
             val explicitlyNames = explicitlyExportedItems
                 .filterIsInstance(ExportedOperator.Psi::class.java)
-                .map { it.name }
+                .filter { it.isValid }
+                .mapNotNull { it.name }
                 .toSet()
 
             if (exportsSelf || name in explicitlyNames) {
@@ -528,7 +536,8 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         } else sequence {
             val explicitlyNames = explicitlyExportedItems
                 .filterIsInstance(ExportedTypeOperator.Psi::class.java)
-                .map { it.name }
+                .filter { it.isValid }
+                .mapNotNull { it.name }
                 .toSet()
 
             if (exportsSelf || name in explicitlyNames) {
