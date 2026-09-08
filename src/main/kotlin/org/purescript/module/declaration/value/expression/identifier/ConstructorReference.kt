@@ -31,9 +31,9 @@ class ConstructorReference(
 
     override fun resolve(): PsiNamedElement? {
         val file = element.containingFile as? PSFile
-        file?.resolveCache?.get(element)?.let { return it }
+        file?.resolveCacheGet(element)?.let { return it }
         val result = candidates.firstOrNull { it.name == element.name }
-        file?.resolveCache?.put(element, result)
+        file?.resolveCachePut(element, result)
         return result
     }
 

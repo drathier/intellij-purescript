@@ -52,9 +52,8 @@ class PSSyntaxHighlightAnnotator : Annotator {
         val topLevel = module.valueGroups.firstOrNull { it.name == name }
         if (topLevel != null) return topLevel
 
-        return module.cache.highlightResolveCache.getOrPut(name) {
-            element.reference.resolve()
-        }
+        return module.cache.highlightResolve(name)
+            ?: element.reference.resolve().also { module.cache.highlightResolvePut(name, it) }
     }
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {

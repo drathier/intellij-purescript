@@ -150,7 +150,7 @@ class Import : PSStubbedElement<Import.Stub>, Comparable<Import> {
     private inline fun <Declaration : PsiNamedElement, reified Wanted : PSImportedItem>
             getImportedDeclarations(exportedDeclarationProperty: (Module) -> List<Declaration>): List<Declaration> {
         val importedModule = importedModule
-        return if (importedModule == null) {
+        return if (importedModule == null || !importedModule.isValid) {
             emptyList()
         } else {
             val exportedDeclarations: List<Declaration> = exportedDeclarationProperty(importedModule)
@@ -372,5 +372,6 @@ class Import : PSStubbedElement<Import.Stub>, Comparable<Import> {
         get() = greenStub?.isExported
             ?: module.cache.exportedItems
                 ?.filterIsInstance<ExportedModule>()
+                ?.filter { it.isValid }
                 ?.any { it.name == name }
 }

@@ -214,7 +214,7 @@ class ExportIntentionAction : IntentionAction {
             val whereKeyword = module.whereKeyword ?: return
             module.addAfter(newExportList, whereKeyword)
         } else {
-            val existingNames = exportList.exportedItems.map { it.name }
+            val existingNames = exportList.exportedItems.filter { it.isValid }.map { it.name }
             val allNames = (existingNames + name).distinct().sorted()
             val newExportList = factory.createExportList(*allNames.toTypedArray())
             exportList.replace(newExportList)

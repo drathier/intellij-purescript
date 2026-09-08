@@ -8,6 +8,7 @@ import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
@@ -39,13 +40,16 @@ class UnusedInspection : LocalInspectionTool() {
             is ValueDeclarationGroup -> when {
                 element.name == "main" -> Unit
                 element.parent is PSInstanceDeclaration -> Unit
-                search(element).anyMatch { it.element !is Signature } -> Unit
-                else -> holder.registerProblem(
-                    element.nameIdentifier,
-                    getDescription(element),
-                    LIKE_UNUSED_SYMBOL,
-                    SafeDelete(element)
-                )
+                else -> {
+                    ProgressManager.checkCanceled()
+                    if (search(element).anyMatch { it.element !is Signature }) Unit
+                    else holder.registerProblem(
+                        element.nameIdentifier,
+                        getDescription(element),
+                        LIKE_UNUSED_SYMBOL,
+                        SafeDelete(element)
+                    )
+                }
             }
 
             is Import -> {
@@ -85,6 +89,7 @@ class UnusedInspection : LocalInspectionTool() {
                         is NewtypeDecl -> listOf(reference.newTypeConstructor)
                         else -> listOf()
                     }
+                    ProgressManager.checkCanceled()
                     val used = constructors.any { constructor ->
                         val scope = GlobalSearchScope.fileScope(element.containingFile)
                         search(constructor, scope, true).anyMatch {
@@ -125,6 +130,7 @@ class UnusedInspection : LocalInspectionTool() {
         private inline fun <reified E : PsiElement> referenceIsUsedInFile(element: E): Boolean {
             val reference = element.reference?.resolve()
             val scope = LocalSearchScope(element.containingFile)
+            ProgressManager.checkCanceled()
             return reference == null || search(reference, scope, true).anyMatch {
                 it.element !is PSImportedItem && it.element !is PSImportedDataMember
             }

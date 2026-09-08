@@ -19,14 +19,14 @@ class ModuleReference(element: Import) : PsiReferenceBase<Import>(
 
     override fun resolve(): Module? {
         val file = element.containingFile as? PSFile
-        file?.resolveCache?.get(element)?.let { return it as? Module }
+        file?.resolveCacheGet(element)?.let { return it as? Module }
         val moduleName = element.moduleName.name
         val project = element.project
         val index = ModuleNameIndex()
         val scope = GlobalSearchScope.allScope(project)
         val modules = StubIndex.getElements(index.key, moduleName, project, scope, Module::class.java)
         val result = modules.firstOrNull { it.isValid }
-        result?.let { file?.resolveCache?.put(element, it) }
+        result?.let { file?.resolveCachePut(element, it) }
         return result
     }
 

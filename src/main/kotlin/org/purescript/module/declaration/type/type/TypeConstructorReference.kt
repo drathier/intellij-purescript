@@ -20,14 +20,14 @@ class TypeConstructorReference(typeConstructor: PSTypeConstructor) :
     override fun getVariants(): Array<PsiNamedElement> = candidates.toList().toTypedArray()
     override fun resolve(): PsiNamedElement? {
         val file = element.containingFile as? PSFile
-        file?.resolveCache?.get(element)?.let { return it }
+        file?.resolveCacheGet(element)?.let { return it }
         val qualifier = element.moduleName?.name
         val result = if (qualifier != null) {
             candidatesFor(qualifier).firstOrNull { it.name == element.name }
         } else {
             resolveWithoutAlias() ?: fromPrim()
         }
-        file?.resolveCache?.put(element, result)
+        file?.resolveCachePut(element, result)
         return result
     }
 

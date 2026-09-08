@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.ConnectException
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.regex.Pattern
 
@@ -54,13 +55,16 @@ class PursIdeRebuildExternalAnnotator : ExternalAnnotator<PsiFile, Response>() {
             ) + "\n"
             
             val output = try {
-                Socket("localhost", port)
+                Socket().apply { connect(InetSocketAddress("localhost", port), 2000) }
             } catch (e: ConnectException) {
-                Thread.sleep(1000)
-                Socket("localhost", port)
-            }.run {
-                outputStream.write(payload.toByteArray(Charsets.UTF_8))
-                inputStream.bufferedReader(Charsets.UTF_8).readLine().also { close() }
+                null
+            }?.run {
+                try {
+                    outputStream.write(payload.toByteArray(Charsets.UTF_8))
+                    inputStream.bufferedReader(Charsets.UTF_8).readLine()
+                } finally {
+                    close()
+                }
             }
 
             try {

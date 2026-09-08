@@ -18,9 +18,9 @@ class ExportedDataMemberReference(exportedDataMember: PSExportedDataMember) : Ps
 
     override fun resolve(): PsiElement? {
         val file = myElement.containingFile as? PSFile
-        file?.resolveCache?.get(myElement)?.let { return it }
+        file?.resolveCacheGet(myElement)?.let { return it }
         val result = candidates.firstOrNull { it.name == myElement.name }
-        file?.resolveCache?.put(myElement, result)
+        file?.resolveCachePut(myElement, result)
         return result
     }
 

@@ -34,6 +34,10 @@ import org.purescript.module.exports.*
 import org.purescript.name.PSModuleName
 import org.purescript.parser.FixityDeclType
 import org.purescript.parser.WHERE
+import java.util.Collections
+import kotlin.jvm.Volatile
+import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 import org.purescript.psi.AStub
 import org.purescript.psi.PSElementType
 import org.purescript.psi.PSPsiFactory
@@ -84,6 +88,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                     explicitlyExportedItems
                         .asSequence()
                         .filterIsInstance<ExportedModule>()
+                        .filter { it.isValid }
                         .filter { it.name != name }
                         .flatMap { it.importDeclarations }
                         .flatMap { it.importedTypeFixityDeclarations }
@@ -122,7 +127,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
     val classMembers get() = run { classes.flatMap { it.classMembers.toList() } }
     override fun unify() {}
 
-    var cache: Cache = Cache()
+    @Volatile var cache: Cache = Cache()
     val exports get() = child<ExportList>()
     val exportedItems get() = exports?.exportedItems?.asSequence() ?: emptySequence()
     val valueFixityDeclarations get() = children(FixityDeclType)
@@ -145,7 +150,14 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         val newTypeConstructors by lazy { newTypeDeclarations.map { it.newTypeConstructor } }
         val typeSynonymDeclarations by lazy { children<TypeDecl>() }
         val foreignDataDeclarations by lazy { children<PSForeignDataDeclaration>() }
-        val highlightResolveCache by lazy { mutableMapOf<String, PsiNamedElement?>() }
+        val highlightResolveCache by lazy { ConcurrentHashMap<String, WeakReference<PsiNamedElement?>>() }
+
+        fun highlightResolve(name: String): PsiNamedElement? =
+            highlightResolveCache[name]?.get()
+
+        fun highlightResolvePut(name: String, value: PsiNamedElement?) {
+            highlightResolveCache[name] = WeakReference(value)
+        }
     }
 
     override fun subtreeChanged() {
@@ -192,6 +204,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                     explicitlyExportedItems
                         .asSequence()
                         .filterIsInstance<ExportedModule>()
+                        .filter { it.isValid }
                         .filter { it.name != name }
                         .flatMap { it.importDeclarations }
                         .flatMap { it.importedValueFixityDeclarations }
@@ -224,6 +237,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                     explicitlyExportedItems
                         .asSequence()
                         .filterIsInstance<ExportedModule>()
+                        .filter { it.isValid }
                         .filter { it.name != name }
                         .flatMap { it.importDeclarations }
                         .flatMap { it.importedConstructorFixityDeclarations }
@@ -250,6 +264,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                 explicitlyExportedItems
                     .asSequence()
                     .filterIsInstance<ExportedModule>()
+                    .filter { it.isValid }
                     .filter { it.name != name }
                     .flatMap { it.importDeclarations }
                     .flatMap { it.importedFixityDeclarations(name) }
@@ -290,6 +305,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             }
 
             explicitlyExportedItems.filterIsInstance<ExportedModule>()
+                .filter { it.isValid }
                 .filter { it.name != name }
                 .flatMap { it.importDeclarations }
                 .flatMapTo(exportedDeclarations) {
@@ -314,7 +330,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                     .filter { it.isValid }
                     .map { it.name }
                     .toSet()
-                val exportedModules = explicitlyExportedItems.filterIsInstance<ExportedModule>().toList()
+                val exportedModules = explicitlyExportedItems.filterIsInstance<ExportedModule>().filter { it.isValid }.toList()
                 val local = if (exportsSelf) {
                     valueGroups.toList()
                 } else {
@@ -469,6 +485,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         get() =
             exports?.exportedItems
                 ?.filterIsInstance<ExportedModule>()
+                ?.filter { it.isValid }
                 ?.any { it.name == name }
                 ?: true
 
@@ -487,11 +504,12 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
         val exportedItems =
             cache.exportedItems ?: return valueNames.filterIsInstance<Importable>().filter { it.name == name }
         return when {
-            exportedItems.any { it.name == name } -> valueNames.filterIsInstance<Importable>()
+            exportedItems.filter { it.isValid }.any { it.name == name } -> valueNames.filterIsInstance<Importable>()
                 .filter { it.name == name }
 
             else -> sequence {
                 exportedItems.filterIsInstance<ExportedModule>()
+                    .filter { it.isValid }
                     .flatMap {
                         if (it.name == this@Module.name) {
                             this@Module.valueNames.filterIsInstance<Importable>().filter { it.name == name }
@@ -522,6 +540,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                 explicitlyExportedItems
                     .asSequence()
                     .filterIsInstance<ExportedModule>()
+                    .filter { it.isValid }
                     .filter { it.name != name }
                     .flatMap { it.importDeclarations }
                     .flatMap { it.importedConstructorFixityDeclarations(name) }
@@ -548,6 +567,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
                 explicitlyExportedItems
                     .asSequence()
                     .filterIsInstance<ExportedModule>()
+                    .filter { it.isValid }
                     .filter { it.name != name }
                     .flatMap { it.importDeclarations }
                     .flatMap { it.importedTypeFixityDeclarations(name) }

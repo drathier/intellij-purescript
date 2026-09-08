@@ -43,7 +43,7 @@ class ExpressionIdentifierReference(expressionIdentifier: PSExpressionIdentifier
 
     override fun resolve(): PsiNamedElement? {
         val file = element.containingFile as? PSFile
-        file?.resolveCache?.get(element)?.let { return it }
+        file?.resolveCacheGet(element)?.let { return it }
         val name = element.name
         val result = when (val qualifyingName = element.qualifiedIdentifier.moduleName?.name) {
             null -> {
@@ -57,7 +57,7 @@ class ExpressionIdentifierReference(expressionIdentifier: PSExpressionIdentifier
 
             else -> getImportedCandidates(qualifyingName).firstOrNull { it.name == name }
         }
-        file?.resolveCache?.put(element, result)
+        file?.resolveCachePut(element, result)
         return result
     }
 

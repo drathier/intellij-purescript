@@ -15,6 +15,9 @@ import org.purescript.inference.TypeSpace
 import org.purescript.module.Module
 import org.purescript.module.exports.ExportedModule
 import java.nio.file.Path
+import java.util.Collections
+import java.util.WeakHashMap
+import kotlin.jvm.Volatile
 import java.nio.file.Paths
 
 class PSFile(viewProvider: FileViewProvider) :
@@ -72,9 +75,12 @@ class PSFile(viewProvider: FileViewProvider) :
             ?.toList()
             ?: emptyList()
 
-    var typeSpace = TypeSpace()
-    val resolveCache = mutableMapOf<PsiElement, PsiNamedElement?>()
+    @Volatile var typeSpace = TypeSpace()
+    private val resolveCache: MutableMap<PsiElement, PsiNamedElement?> = Collections.synchronizedMap(WeakHashMap())
     private var lastContentStamp: Long = -1
+
+    fun resolveCacheGet(element: PsiElement): PsiNamedElement? = resolveCache[element]
+    fun resolveCachePut(element: PsiElement, value: PsiNamedElement?) { resolveCache[element] = value }
 
     override fun subtreeChanged() {
         val vFile = virtualFile

@@ -15,9 +15,9 @@ class ImportedClassReference(importedClass: PSImportedClass) : PsiReferenceBase<
 
     override fun resolve(): ClassDecl? {
         val file = myElement.containingFile as? PSFile
-        file?.resolveCache?.get(myElement)?.let { return it as? ClassDecl }
+        file?.resolveCacheGet(myElement)?.let { return it as? ClassDecl }
         val result = candidates.firstOrNull { it.name == myElement.name }
-        file?.resolveCache?.put(myElement, result)
+        file?.resolveCachePut(myElement, result)
         return result
     }
 

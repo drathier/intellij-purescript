@@ -153,7 +153,7 @@ class ValueDeclarationGroup : PSStubbedElement<ValueDeclarationGroup.Stub>,
         get() = greenStub?.isExported ?: when {
             !isTopLevel -> false
             module.exports == null -> true
-            else -> name in (module.exports?.values?.map { it.name } ?: emptyList())
+            else -> name in (module.exports?.values?.filter { it.isValid }?.map { it.name } ?: emptyList())
         }
     val isTopLevel get() = parent is Module
     override fun getUseScope(): SearchScope = (

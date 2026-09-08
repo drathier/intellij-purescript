@@ -17,14 +17,14 @@ class ExportedModuleReference(exportedModule: ExportedModule) : PsiReferenceBase
 
     override fun resolve(): PsiElement? {
         val file = myElement.containingFile as? PSFile
-        file?.resolveCache?.get(myElement)?.let { return it }
+        file?.resolveCacheGet(myElement)?.let { return it }
         val result = if (element.name == myElement.module.name) {
             myElement.module
         } else {
             candidates.firstOrNull { it.name == myElement.name }
                 ?.run { importAlias ?: importedModule }
         }
-        file?.resolveCache?.put(myElement, result)
+        file?.resolveCachePut(myElement, result)
         return result
     }
 

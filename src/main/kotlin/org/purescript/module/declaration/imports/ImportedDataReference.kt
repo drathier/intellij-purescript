@@ -16,9 +16,9 @@ class ImportedDataReference(element: PSImportedData) : PsiReferenceBase<PSImport
 
     override fun resolve(): PsiElement? {
         val file = element.containingFile as? PSFile
-        file?.resolveCache?.get(element)?.let { return it }
+        file?.resolveCacheGet(element)?.let { return it }
         val result = candidates.firstOrNull { it.name == element.name }
-        file?.resolveCache?.put(element, result)
+        file?.resolveCachePut(element, result)
         return result
     }
 
