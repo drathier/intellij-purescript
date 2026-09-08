@@ -15,6 +15,7 @@ import com.intellij.psi.util.endOffset
 import com.intellij.psi.util.parents
 import com.intellij.psi.util.parentsOfType
 import com.intellij.psi.util.startOffset
+import org.purescript.file.PSFile
 import org.purescript.highlighting.PSSyntaxHighlighter.FUNCTION_CALL
 import org.purescript.highlighting.PSSyntaxHighlighter.FUNCTION_DECLARATION
 import org.purescript.highlighting.PSSyntaxHighlighter.GLOBAL_VARIABLE
@@ -41,19 +42,28 @@ class PSSyntaxHighlightAnnotator : Annotator {
         val name = element.name
         if (element.qualifiedIdentifier.moduleName?.name != null) return null
 
+        val module = element.module
+
+        // Ask the reference's own (per-element) cache first: it caches both
+        // resolve hits and misses, so unresolved/imported names are only
+        // resolved once per element instead of on every highlight pass.
+        val file = element.containingFile as? PSFile
+        val fullyQualifiedCache = file?.resolveCacheGet(element)
+        if (fullyQualifiedCache != null) return fullyQualifiedCache
+
         val local = element
             .parentsOfType<ValueNamespace>(withSelf = false)
             .flatMap { it.valueNames }
             .takeWhile { it.containingFile == element.containingFile }
             .firstOrNull { it.name == name }
-        if (local != null) return local
+        if (local != null) return local.also { file?.resolveCachePut(element, it) }
 
-        val module = element.module
         val topLevel = module.valueGroups.firstOrNull { it.name == name }
-        if (topLevel != null) return topLevel
+        if (topLevel != null) return topLevel.also { file?.resolveCachePut(element, it) }
 
-        return module.cache.highlightResolve(name)
-            ?: element.reference.resolve().also { module.cache.highlightResolvePut(name, it) }
+        val cached = module.cache.highlightResolve(name)
+        if (cached != null) return cached
+        return element.reference.resolve().also { module.cache.highlightResolvePut(name, it) }
     }
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {

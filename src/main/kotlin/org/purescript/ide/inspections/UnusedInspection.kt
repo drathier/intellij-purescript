@@ -42,7 +42,10 @@ class UnusedInspection : LocalInspectionTool() {
                 element.parent is PSInstanceDeclaration -> Unit
                 else -> {
                     ProgressManager.checkCanceled()
-                    if (search(element).anyMatch { it.element !is Signature }) Unit
+                    if (search(element).anyMatch {
+                            ProgressManager.checkCanceled()
+                            it.element !is Signature
+                        }) Unit
                     else holder.registerProblem(
                         element.nameIdentifier,
                         getDescription(element),
@@ -91,8 +94,10 @@ class UnusedInspection : LocalInspectionTool() {
                     }
                     ProgressManager.checkCanceled()
                     val used = constructors.any { constructor ->
+                        ProgressManager.checkCanceled()
                         val scope = GlobalSearchScope.fileScope(element.containingFile)
                         search(constructor, scope, true).anyMatch {
+                            ProgressManager.checkCanceled()
                             it.element !is PSImportedItem && it.element !is PSImportedDataMember
                         }
                     }
@@ -124,7 +129,10 @@ class UnusedInspection : LocalInspectionTool() {
 
         private fun qualifierIsUsed(alias: String?): Boolean {
             if (alias == null) return false
-            return holder.file.descendantsOfType<Qualified>().any { it.qualifierName == alias }
+            return holder.file.descendantsOfType<Qualified>().asSequence().any {
+                ProgressManager.checkCanceled()
+                it.qualifierName == alias
+            }
         }
 
         private inline fun <reified E : PsiElement> referenceIsUsedInFile(element: E): Boolean {
@@ -132,6 +140,7 @@ class UnusedInspection : LocalInspectionTool() {
             val scope = LocalSearchScope(element.containingFile)
             ProgressManager.checkCanceled()
             return reference == null || search(reference, scope, true).anyMatch {
+                ProgressManager.checkCanceled()
                 it.element !is PSImportedItem && it.element !is PSImportedDataMember
             }
         }

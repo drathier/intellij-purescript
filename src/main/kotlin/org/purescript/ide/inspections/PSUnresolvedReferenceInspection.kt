@@ -2,6 +2,7 @@ package org.purescript.ide.inspections
 
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiReference
@@ -54,6 +55,7 @@ class PSUnresolvedReferenceInspection : LocalInspectionTool() {
             }
 
             private fun visitReference(reference: PsiReference) {
+                ProgressManager.checkCanceled()
                 when(reference) {
                     is PsiReferenceBase.Poly<*> -> {
                         if (reference.multiResolve(false).isEmpty()) {

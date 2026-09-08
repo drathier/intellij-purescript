@@ -107,12 +107,7 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
     val imports: Array<Import> get() = cache.imports
 
     override val valueNames: Sequence<PsiNamedElement>
-        get() = run {
-            (valueGroups.asSequence() +
-                    foreignValues.asSequence() +
-                    classMembers.asSequence() +
-                    imports.flatMap { it.importedValueNames }).toList()
-        }.asSequence()
+        get() = cache.valueNames.asSequence()
     override val constructors: List<PsiNamedElement>
         get() = cache.newTypeConstructors + cache.dataConstructors
 
@@ -121,10 +116,10 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
             null -> constructors.asSequence()
             else -> exportedItems.flatMap { it.constructors }
         }
-    val valueGroups get() = run { children<ValueDeclarationGroup>() }
-    val foreignValues get() = run { children<ForeignValueDecl>() }
-    val classes get() = run { children<ClassDecl>() }
-    val classMembers get() = run { classes.flatMap { it.classMembers.toList() } }
+    val valueGroups get() = cache.valueGroups
+    val foreignValues get() = cache.foreignValues
+    val classes get() = cache.classes
+    val classMembers get() = cache.classMembers
     override fun unify() {}
 
     @Volatile var cache: Cache = Cache()
@@ -134,6 +129,16 @@ class Module : PsiNameIdentifierOwner, DocCommentOwner,
 
     inner class Cache {
         val exportedItems by lazy { exports?.exportedItems }
+        val valueGroups by lazy { children<ValueDeclarationGroup>() }
+        val foreignValues by lazy { children<ForeignValueDecl>() }
+        val classes by lazy { children<ClassDecl>() }
+        val classMembers by lazy { classes.flatMap { it.classMembers.toList() } }
+        val valueNames by lazy {
+            (valueGroups.asSequence() +
+                    foreignValues.asSequence() +
+                    classMembers.asSequence() +
+                    imports.flatMap { it.importedValueNames }).toList()
+        }
         val classDeclarations by lazy { classes }
         val imports by lazy { children<Import>() }
         val importsByName by lazy { imports.groupBy { it.name } }
