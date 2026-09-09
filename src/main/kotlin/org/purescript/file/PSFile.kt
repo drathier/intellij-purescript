@@ -77,16 +77,21 @@ class PSFile(viewProvider: FileViewProvider) :
 
     @Volatile var typeSpace = TypeSpace()
     private val resolveCache: MutableMap<PsiElement, PsiNamedElement?> = Collections.synchronizedMap(WeakHashMap())
+    private val unusedGroupCache: MutableMap<PsiElement, Boolean> = Collections.synchronizedMap(WeakHashMap())
     private var lastContentStamp: Long = -1
 
     fun resolveCacheGet(element: PsiElement): PsiNamedElement? = resolveCache[element]
     fun resolveCachePut(element: PsiElement, value: PsiNamedElement?) { resolveCache[element] = value }
+
+    fun unusedGroupCacheGet(element: PsiElement): Boolean? = unusedGroupCache[element]
+    fun unusedGroupCachePut(element: PsiElement, unused: Boolean) { unusedGroupCache[element] = unused }
 
     override fun subtreeChanged() {
         val vFile = virtualFile
         if (vFile == null || vFile.modificationStamp != lastContentStamp) {
             lastContentStamp = vFile?.modificationStamp ?: 0
             resolveCache.clear()
+            unusedGroupCache.clear()
             typeSpace = TypeSpace()
         }
         super.subtreeChanged()

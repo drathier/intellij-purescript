@@ -26,6 +26,7 @@ import org.purescript.module.declaration.classes.PSInstanceDeclaration
 import org.purescript.module.declaration.data.DataDeclaration
 import org.purescript.module.declaration.imports.*
 import org.purescript.module.declaration.newtype.NewtypeDecl
+import org.purescript.file.PSFile
 import org.purescript.module.declaration.value.ValueDeclarationGroup
 import org.purescript.module.declaration.value.expression.Qualified
 import org.purescript.parser.COMMA
@@ -36,24 +37,31 @@ class UnusedInspection : LocalInspectionTool() {
         Visitor(holder)
 
     class Visitor(private val holder: ProblemsHolder) : PsiElementVisitor() {
-        override fun visitElement(element: PsiElement) = when (element) {
-            is ValueDeclarationGroup -> when {
-                element.name == "main" -> Unit
-                element.parent is PSInstanceDeclaration -> Unit
-                else -> {
-                    ProgressManager.checkCanceled()
-                    if (search(element).anyMatch {
+        override fun visitElement(element: PsiElement) {
+            when (element) {
+                is ValueDeclarationGroup -> when {
+                    element.name == "main" -> Unit
+                    element.parent is PSInstanceDeclaration -> Unit
+                    else -> {
+                        ProgressManager.checkCanceled()
+                        val file = element.containingFile as? PSFile
+                        val cached = file?.unusedGroupCacheGet(element)
+                        if (cached == false) return
+                        val unused = cached ?: !search(element).anyMatch {
                             ProgressManager.checkCanceled()
                             it.element !is Signature
-                        }) Unit
-                    else holder.registerProblem(
-                        element.nameIdentifier,
-                        getDescription(element),
-                        LIKE_UNUSED_SYMBOL,
-                        SafeDelete(element)
-                    )
+                        }
+                        if (cached == null) file?.unusedGroupCachePut(element, unused)
+                        if (unused) {
+                            holder.registerProblem(
+                                element.nameIdentifier,
+                                getDescription(element),
+                                LIKE_UNUSED_SYMBOL,
+                                SafeDelete(element)
+                            )
+                        } else Unit
+                    }
                 }
-            }
 
             is Import -> {
                 val alias = element.importAlias
@@ -112,6 +120,7 @@ class UnusedInspection : LocalInspectionTool() {
             }
 
             else -> Unit
+            }
         }
 
         private fun registerImportItem(element: PsiElement) =
@@ -129,17 +138,17 @@ class UnusedInspection : LocalInspectionTool() {
 
         private fun qualifierIsUsed(alias: String?): Boolean {
             if (alias == null) return false
-            return holder.file.descendantsOfType<Qualified>().asSequence().any {
+            return holder.file.descendantsOfType<Qualified>().any {
                 ProgressManager.checkCanceled()
                 it.qualifierName == alias
             }
         }
 
         private inline fun <reified E : PsiElement> referenceIsUsedInFile(element: E): Boolean {
-            val reference = element.reference?.resolve()
+            val reference = element.reference?.resolve() ?: return true
             val scope = LocalSearchScope(element.containingFile)
             ProgressManager.checkCanceled()
-            return reference == null || search(reference, scope, true).anyMatch {
+            return search(reference, scope, true).anyMatch {
                 ProgressManager.checkCanceled()
                 it.element !is PSImportedItem && it.element !is PSImportedDataMember
             }

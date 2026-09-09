@@ -6,6 +6,7 @@ import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity.ERROR
 import com.intellij.lang.annotation.HighlightSeverity.INFORMATION
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
@@ -39,6 +40,7 @@ import org.purescript.parser.TypeCtor
 class PSSyntaxHighlightAnnotator : Annotator {
 
     private fun resolveForHighlighting(element: PSExpressionIdentifier): PsiNamedElement? {
+        ProgressManager.checkCanceled()
         val name = element.name
         if (element.qualifiedIdentifier.moduleName?.name != null) return null
 
@@ -67,6 +69,7 @@ class PSSyntaxHighlightAnnotator : Annotator {
     }
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
+        ProgressManager.checkCanceled()
         when (element) {
             is PSIdentifier -> when {
                 element.parent is ValueDecl || element.parent is Signature ->

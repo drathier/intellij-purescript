@@ -6,20 +6,19 @@ import com.google.gson.JsonSyntaxException
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
-import com.intellij.openapi.application.invokeAndWaitIfNeeded
-import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.regex.Pattern
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 
 class PursIdeRebuildExternalAnnotator : ExternalAnnotator<PsiFile, Response>() {
@@ -29,15 +28,15 @@ class PursIdeRebuildExternalAnnotator : ExternalAnnotator<PsiFile, Response>() {
     override fun doAnnotate(file: PsiFile?): Response? {
         if (file == null) return null
 
-        // without a purs bin path we can't annotate with it
         val project = file.project
         val purs = project.service<Purs>()
-        val filePath = file.virtualFile.toNioPath()
 
-        // Make sure that the corresponding FFI file on disk is up-to-date
+        // Save FFI file asynchronously - don't block the highlighting thread
+        // waiting for EDT, which can deadlock with the write-intent lock
+        val filePath = file.virtualFile.toNioPath()
         val jsPath = filePath.parent.resolve((filePath.toFile().nameWithoutExtension + ".js"))
         VirtualFileManager.getInstance().findFileByNioPath(jsPath)?.let { jsFile ->
-            invokeAndWaitIfNeeded {
+            ApplicationManager.getApplication().invokeLater {
                 val fdm = FileDocumentManager.getInstance()
                 fdm.getDocument(jsFile)?.let { fdm.saveDocument(it) }
             }
@@ -46,21 +45,26 @@ class PursIdeRebuildExternalAnnotator : ExternalAnnotator<PsiFile, Response>() {
         val gson = GsonBuilder().disableHtmlEscaping().create()
 
         return purs.withServer { port ->
-            if (port == null) error("No PSC ide port")
+            if (port == null) return@withServer null
             val payload = Json.encodeToString(
                 PursCommand(
                     "rebuild",
                     PursParams("data:" + file.text, file.virtualFile.path)
                 )
             ) + "\n"
-            
+
             val output = try {
-                Socket().apply { connect(InetSocketAddress("localhost", port), 2000) }
+                Socket().apply {
+                    tcpNoDelay = true
+                    soTimeout = 5000
+                    connect(InetSocketAddress("localhost", port), 2000)
+                }
             } catch (e: ConnectException) {
                 null
             }?.run {
                 try {
                     outputStream.write(payload.toByteArray(Charsets.UTF_8))
+                    outputStream.flush()
                     inputStream.bufferedReader(Charsets.UTF_8).readLine()
                 } finally {
                     close()
